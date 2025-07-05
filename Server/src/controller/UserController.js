@@ -61,6 +61,9 @@ export const signupUser = async (req, res) => {
 };
 
 
+const MAX_ATTEMPTS = 3;
+const LOCK_TIME_MINUTES = 15;
+
 export const loginUser = async (req, res) => {
   try {
     const { accountNumber, password } = req.body;
@@ -69,23 +72,48 @@ export const loginUser = async (req, res) => {
       return res.status(400).json({ message: 'Account number and password are required' });
     }
 
-    if (accountNumber.length !== 10) {
-      return res.status(400).json({ message: 'Account number must be 10 digits' });
-    }
-
     const user = await User.findOne({ accountNumber });
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     if (user.isLocked) {
-      return res.status(403).json({ message: 'Account is locked. Please contact support.' });
+      if (user.lockUntil && user.lockUntil > new Date()) {
+        const remainingMs = user.lockUntil - new Date();
+        const remainingMin = Math.ceil(remainingMs / 60000);
+        return res.status(403).json({ message: `Account locked. Try again in ${remainingMin} minute(s).` });
+      } else {
+
+        user.isLocked = false;
+        user.failedLoginAttempts = 0;
+        user.lockUntil = null;
+        await user.save();
+      }
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      user.failedLoginAttempts += 1;
+
+      if (user.failedLoginAttempts >= MAX_ATTEMPTS) {
+        user.isLocked = true;
+        user.lockUntil = new Date(Date.now() + LOCK_TIME_MINUTES * 60 * 1000); 
+      }
+
+      await user.save();
+
+      const left = MAX_ATTEMPTS - user.failedLoginAttempts;
+      return res.status(401).json({
+        message: user.isLocked
+          ? 'Account locked due to multiple failed attempts. Try again later.'
+          : `Invalid credentials. ${left} attempt(s) remaining.`,
+      });
     }
+
+    user.failedLoginAttempts = 0;
+    user.isLocked = false;
+    user.lockUntil = null;
+    await user.save();
 
     const token = createToken(user._id);
 
@@ -142,5 +170,46 @@ export const getUserProfile = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+
+export const updateUserProfile = async (req, res) => {
+  try {
+    const { fullName, email } = req.body;
+
+    const user = req.user;
+
+    if (!user) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+
+    if (fullName) user.fullName = fullName;
+    if (email) user.email = email;
+
+
+    if (email && email !== user.email) {
+      const existingEmail = await User.findOne({ email });
+      if (existingEmail && existingEmail._id.toString() !== user._id.toString()) {
+        return res.status(409).json({ message: 'Email is already in use' });
+      }
+    }
+
+    const updatedUser = await user.save();
+
+    res.status(200).json({
+      message: 'Profile updated successfully',
+      user: {
+        _id: updatedUser._id,
+        accountNumber: updatedUser.accountNumber,
+        fullName: updatedUser.fullName,
+        email: updatedUser.email,
+        createdAt: updatedUser.createdAt
+      }
+    });
+  } catch (error) {
+    console.error('Update profile error:', error.message);
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
