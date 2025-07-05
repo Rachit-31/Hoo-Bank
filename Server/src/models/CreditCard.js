@@ -19,10 +19,7 @@ const creditCardSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
-  expirationDate: {
-    type: Date,
-    required: true
-  }
+  issuedAt: { type: Date, default: Date.now }
 });
 
 export default mongoose.model('CreditCard', creditCardSchema);
