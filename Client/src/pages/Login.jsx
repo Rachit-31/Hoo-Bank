@@ -23,7 +23,7 @@ const Login = () => {
         { withCredentials: true } 
       );
 
-      console.log(res.data);
+      console.log(res.data.token);
       localStorage.setItem('token',res.data.token);
       localStorage.setItem('id',res.data.user._id);
       toast.success("Login Successful")
