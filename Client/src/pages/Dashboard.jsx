@@ -129,6 +129,33 @@ const Dashboard = () => {
         }
     };
 
+    const handleDownloadPDF = async (accountId) => {
+        const token = localStorage.getItem("token");
+
+        try {
+            const res = await axios.get(`${API}/account/downloadPdf/${accountId}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+                responseType: 'blob',
+            });
+
+            // ✅ Create a blob URL and trigger download
+            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const link = document.createElement("a");
+            link.href = url;
+            link.setAttribute("download", "transfer-history.pdf");
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+            console.log(res)
+        } catch (err) {
+            console.error("Download error:", err.message || err);
+            toast.error("Failed to download transfer history PDF.");
+        }
+    };
+
 
     return (
         <div className="flex flex-col md:flex-row min-h-screen bg-zinc-900 text-white">
@@ -180,19 +207,24 @@ const Dashboard = () => {
                                         </h2>
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                             {accounts[type].map((acc) => (
-                                                <div
-                                                    key={acc._id}
-                                                    className="bg-zinc-800 p-5 rounded-xl shadow"
-                                                >
+                                                <div key={acc._id} className="bg-zinc-800 p-5 rounded-xl shadow">
                                                     <h3 className="text-lg font-semibold mb-1">
                                                         A/C Number: {acc.accountNumber}
                                                     </h3>
                                                     <p className="text-green-400 text-xl font-mono mb-1">
                                                         ₹{acc.balance.toLocaleString("en-IN")}
                                                     </p>
-                                                    <p className="text-zinc-400 text-sm">
+                                                    <p className="text-zinc-400 text-sm mb-4">
                                                         Opened On: {new Date(acc.openedAt).toLocaleDateString()}
                                                     </p>
+
+                                                    {/* 🧾 Download Button */}
+                                                    <button
+                                                        onClick={() => handleDownloadPDF(acc._id)}
+                                                        className="mt-2 text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded"
+                                                    >
+                                                        Download Transfer PDF
+                                                    </button>
                                                 </div>
                                             ))}
                                         </div>
@@ -201,6 +233,7 @@ const Dashboard = () => {
                             )}
                         </div>
                     </section>
+
                 )}
 
                 {activeSection === "transactions" && (
