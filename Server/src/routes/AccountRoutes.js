@@ -9,8 +9,8 @@ const router = Router();
 router.route("/getAccount/:userId").get(verifyToken, getUserAccounts)
 router.route("/getAccountbyId/:accountId").get(verifyToken, getAccountDetails)
 router.route("/getCreditCard").get(verifyToken, getCreditCardSummary);
-router.route("/makeTransaction/:userId").post(verifyToken, transferMoney);
+router.route("/makeTransaction").post(verifyToken, transferMoney);
 router.route("/getTransactions/:userId").get(verifyToken, getUserTransactions)
-router.route("/downloadPdf/:accountId").post(verifyToken, downloadStatementPDF)
+router.route("/downloadPdf/:accountId").get(verifyToken, downloadStatementPDF)
 
 export default router;

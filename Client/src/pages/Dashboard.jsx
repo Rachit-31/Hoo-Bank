@@ -22,6 +22,11 @@ const Dashboard = () => {
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
     const [filteredTransactions, setFilteredTransactions] = useState([]);
+    const [method, setMethod] = useState("NEFT");
+    const [ifscCode, setIfscCode] = useState("");
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [confirmInput, setConfirmInput] = useState("");
+
 
     const applyFilter = () => {
         const filtered = transactions.filter((tx) => {
@@ -66,6 +71,7 @@ const Dashboard = () => {
                     headers: { Authorization: `Bearer ${token}` },
                     withCredentials: true,
                 });
+                console.log(res.data.transactions)
                 setTransactions(res.data.transactions || []);
                 setFilteredTransactions(res.data.transactions || []);
 
@@ -79,20 +85,31 @@ const Dashboard = () => {
     }, [navigate]);
 
 
-
-    const handleTransfer = async (e) => {
+    const handleTransferClick = (e) => {
         e.preventDefault();
+        setShowConfirmModal(true);
+    };
+
+
+    const handleConfirmTransfer = async () => {
+        if (confirmInput !== "CONFIRM") {
+            toast.error("You must type CONFIRM to proceed.");
+            return;
+        }
+
         const token = localStorage.getItem("token");
-        const userId = localStorage.getItem("id")
+        const userId = localStorage.getItem("id");
 
         try {
             const res = await axios.post(
-                `${API}/account/makeTransaction/${userId}`,
+                `${API}/account/makeTransaction`,
                 {
                     fromAccountId,
                     toAccountNumber,
                     amount: parseFloat(amount),
                     description,
+                    method,
+                    ifscCode,
                 },
                 {
                     headers: { Authorization: `Bearer ${token}` },
@@ -101,16 +118,14 @@ const Dashboard = () => {
             );
 
             toast.success("Transfer successful!");
+            setShowConfirmModal(false);
 
-            // Optional: refresh accounts and transactions
             setTimeout(() => {
                 window.location.reload();
             }, 1000);
         } catch (err) {
             console.error("Transfer error:", err.response?.data || err.message);
-            toast.error(
-                err.response?.data?.message || "Transfer failed. Try again."
-            );
+            toast.error(err.response?.data?.message || "Transfer failed. Try again.");
         }
     };
 
@@ -239,19 +254,15 @@ const Dashboard = () => {
                                             </span>
                                         </div>
 
-                                        <div className="text-sm text-zinc-300">
-                                            <span className="font-medium">From:</span> A/C {tx.fromAccount?.accountNumber || "N/A"}
-                                        </div>
-                                        <div className="text-sm text-zinc-300">
-                                            <span className="font-medium">To:</span> A/C {tx.toAccount?.accountNumber || "N/A"}
-                                        </div>
-
                                         <div className="text-sm text-zinc-400 italic">
                                             {tx.description || "No description"}
                                         </div>
 
                                         <div className="text-xs text-zinc-500">
-                                            {new Date(tx.date).toLocaleString()}
+                                            {new Date(tx.timestamp).toLocaleString("en-IN", {
+                                                dateStyle: "medium",
+                                                timeStyle: "short",
+                                            })}
                                         </div>
                                     </div>
                                 ))
@@ -265,11 +276,12 @@ const Dashboard = () => {
 
 
                 {activeSection === "transfer" && (
-                    <section className="mt-15">
+                    <section className="mt-15 flex justify-center items-start min-h-[80vh]">
                         <form
-                            onSubmit={handleTransfer}
-                            className="bg-zinc-800 p-6 rounded-xl shadow space-y-4 max-w-xl"
+                            onSubmit={handleConfirmTransfer}
+                            className="bg-zinc-800 p-6 rounded-xl shadow space-y-4 max-w-xl w-full"
                         >
+                            {/* From Account */}
                             <div>
                                 <label className="block mb-1 text-sm">From Account</label>
                                 <select
@@ -284,11 +296,12 @@ const Dashboard = () => {
                                             <option key={acc._id} value={acc._id}>
                                                 {type.toUpperCase()} - {acc.accountNumber} (₹{acc.balance})
                                             </option>
-                                        )) || []
+                                        ))
                                     )}
                                 </select>
                             </div>
 
+                            {/* To Account Number */}
                             <div>
                                 <label className="block mb-1 text-sm">To Account Number</label>
                                 <input
@@ -301,6 +314,35 @@ const Dashboard = () => {
                                 />
                             </div>
 
+                            {/* IFSC Code */}
+                            <div>
+                                <label className="block mb-1 text-sm">IFSC Code</label>
+                                <input
+                                    type="text"
+                                    value={ifscCode}
+                                    onChange={(e) => setIfscCode(e.target.value)}
+                                    className="w-full p-2 bg-zinc-900 border border-zinc-700 rounded"
+                                    placeholder="Enter IFSC code"
+                                    required
+                                />
+                            </div>
+
+                            {/* Method */}
+                            <div>
+                                <label className="block mb-1 text-sm">Transfer Method</label>
+                                <select
+                                    value={method}
+                                    onChange={(e) => setMethod(e.target.value)}
+                                    className="w-full p-2 bg-zinc-900 border border-zinc-700 rounded"
+                                    required
+                                >
+                                    <option value="NEFT">NEFT</option>
+                                    <option value="RTGS">RTGS</option>
+                                    <option value="IMPS">IMPS</option>
+                                </select>
+                            </div>
+
+                            {/* Amount */}
                             <div>
                                 <label className="block mb-1 text-sm">Amount</label>
                                 <input
@@ -313,6 +355,7 @@ const Dashboard = () => {
                                 />
                             </div>
 
+                            {/* Description */}
                             <div>
                                 <label className="block mb-1 text-sm">Description (optional)</label>
                                 <input
@@ -324,13 +367,53 @@ const Dashboard = () => {
                             </div>
 
                             <button
-                                type="submit"
+                                onClick={handleTransferClick}
+                                type="button"
                                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
                             >
                                 Transfer
                             </button>
+                            {showConfirmModal && (
+                                <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+                                    <div className="bg-zinc-900 p-6 rounded-xl w-full max-w-lg border border-zinc-700 shadow-lg">
+                                        <h2 className="text-xl font-semibold text-red-500 mb-4">⚠️ Confirm Transfer</h2>
+                                        <p className="mb-4 text-zinc-300">
+                                            You are about to transfer <span className="text-green-400 font-bold">₹{amount}</span> from your account to account number <span className="text-blue-400 font-bold">{toAccountNumber}</span> via <span className="text-yellow-400 font-bold">{method}</span>.
+                                        </p>
+                                        <p className="text-sm text-red-400 mb-2">
+                                            ⚠️ Please double-check the account number and amount. Bank transfers are irreversible. If you send to the wrong account, your money may be lost.
+                                        </p>
+                                        <p className="text-sm text-zinc-400 mb-2">
+                                            Type <span className="font-mono text-white font-semibold">CONFIRM</span> to proceed:
+                                        </p>
+                                        <input
+                                            type="text"
+                                            value={confirmInput}
+                                            onChange={(e) => setConfirmInput(e.target.value)}
+                                            className="w-full p-2 bg-zinc-800 border border-zinc-600 rounded mb-4"
+                                            placeholder="Type CONFIRM to continue"
+                                        />
+                                        <div className="flex justify-end space-x-3">
+                                            <button
+                                                onClick={() => setShowConfirmModal(false)}
+                                                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                onClick={handleConfirmTransfer}
+                                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
+                                            >
+                                                Confirm Transfer
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                         </form>
                     </section>
+
                 )}
 
             </main>
