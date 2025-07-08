@@ -10,7 +10,7 @@ router.route("/register").post(signupUser);
 router.route("/login").post(loginUser);
 router.route("/logout").post(verifyToken, logoutUser);
 router.route("/getUser/:id").get(verifyToken, getUserProfile)
-router.route("/updateUser").post(verifyToken, updateUserProfile);
+router.route("/updateUser").put(verifyToken, updateUserProfile);
 
 
 export default router

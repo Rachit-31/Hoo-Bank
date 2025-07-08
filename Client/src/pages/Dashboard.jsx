@@ -26,6 +26,9 @@ const Dashboard = () => {
     const [ifscCode, setIfscCode] = useState("");
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [confirmInput, setConfirmInput] = useState("");
+    const [profile, setProfile] = useState({ fullName: "", email: "" });
+    const [editingProfile, setEditingProfile] = useState(false);
+
 
 
     const applyFilter = () => {
@@ -136,6 +139,7 @@ const Dashboard = () => {
             const res = await axios.get(`${API}/account/downloadPdf/${accountId}`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
+                    withCredentials: true,
                 },
                 responseType: 'blob',
             });
@@ -157,12 +161,64 @@ const Dashboard = () => {
     };
 
 
+    useEffect(() => {
+        const fetchProfile = async () => {
+            const userId = localStorage.getItem("id");
+            const token = localStorage.getItem("token");
+            try {
+                const res = await axios.get(`${API}/users/getUser/${userId}`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                    withCredentials: true,
+                });
+                setProfile(res.data.user);
+            } catch (err) {
+                console.error("Failed to fetch user profile:", err.message);
+                // toast.error("Failed to load profile.");
+            }
+        };
+
+        fetchProfile();
+    }, []);
+
+    const handleProfileUpdate = async () => {
+        const token = localStorage.getItem("token");
+
+        try {
+            const res = await axios.put(
+                `${API}/users/updateUser`,
+                {
+                    fullName: profile.fullName,
+                    email: profile.email,
+                },
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                    withCredentials: true,
+                }
+            );
+
+            toast.success(res.data.message || "Profile updated");
+            setEditingProfile(false);
+        } catch (err) {
+            console.error("Profile update error:", err.message || err);
+            toast.error(err.response?.data?.message || "Update failed");
+        }
+    };
+
+
+
     return (
         <div className="flex flex-col md:flex-row min-h-screen bg-zinc-900 text-white">
             {/* Sidebar */}
             <aside className="w-full md:w-64 bg-zinc-950 p-4 border-r border-zinc-800">
                 <h2 className="text-xs text-zinc-400 font-semibold mb-4 mt-13">MENU</h2>
                 <div className="space-y-2">
+                    <div
+                        onClick={() => setActiveSection("profile")}
+                        className={`flex items-center p-2 rounded cursor-pointer ${activeSection === "profile" ? "bg-zinc-800" : "hover:bg-zinc-800"}`}
+                    >
+                        <span className="ml-2 text-white">Profile</span>
+                    </div>
+
                     <div
                         onClick={() => setActiveSection("account")}
                         className={`flex items-center p-2 rounded cursor-pointer ${activeSection === "account" ? "bg-zinc-800" : "hover:bg-zinc-800"
@@ -235,6 +291,59 @@ const Dashboard = () => {
                     </section>
 
                 )}
+
+                {activeSection === "profile" && (
+                    <section>
+                        <h1 className="text-3xl font-bold mb-6">My Profile</h1>
+                        <div className="bg-zinc-800 p-6 rounded-xl shadow space-y-4 max-w-lg">
+                            <div>
+                                <label className="block mb-1 text-sm">Full Name</label>
+                                <input
+                                    type="text"
+                                    value={profile.fullName}
+                                    onChange={(e) => setProfile({ ...profile, fullName: e.target.value })}
+                                    disabled={!editingProfile}
+                                    className="w-full p-2 bg-zinc-900 border border-zinc-700 rounded"
+                                />
+                            </div>
+                            <div>
+                                <label className="block mb-1 text-sm">Email</label>
+                                <input
+                                    type="email"
+                                    value={profile.email}
+                                    onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                                    disabled={!editingProfile}
+                                    className="w-full p-2 bg-zinc-900 border border-zinc-700 rounded"
+                                />
+                            </div>
+
+                            {editingProfile ? (
+                                <div className="flex space-x-3">
+                                    <button
+                                        onClick={handleProfileUpdate}
+                                        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
+                                    >
+                                        Save Changes
+                                    </button>
+                                    <button
+                                        onClick={() => setEditingProfile(false)}
+                                        className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={() => setEditingProfile(true)}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+                                >
+                                    Edit Profile
+                                </button>
+                            )}
+                        </div>
+                    </section>
+                )}
+
 
                 {activeSection === "transactions" && (
                     <section>
