@@ -1,5 +1,6 @@
 import User from "../models/User.js";
 import bcrypt from 'bcrypt';
+import axios from "axios";
 import jwt from 'jsonwebtoken';
 
 const createToken = (userId) => {
@@ -65,78 +66,54 @@ const MAX_ATTEMPTS = 3;
 const LOCK_TIME_MINUTES = 15;
 
 export const loginUser = async (req, res) => {
+  const { accountNumber, password, captchaToken } = req.body;
+
+  // ✅ Verify reCAPTCHA token
   try {
-    const { accountNumber, password } = req.body;
+    const captchaRes = await axios.post(
+      "https://www.google.com/recaptcha/api/siteverify",
+      new URLSearchParams({
+        secret: "6LcbjHsrAAAAAJQjQyZ3BwnL2iwLza1bqYD19d6A", // ✅ Secret key
+        response: captchaToken,
+      })
+    );
 
-    if (!accountNumber || !password) {
-      return res.status(400).json({ message: 'Account number and password are required' });
+    if (!captchaRes.data.success) {
+      return res.status(403).json({ message: "CAPTCHA verification failed" });
     }
+  } catch (error) {
+    console.error("CAPTCHA error:", error.message);
+    return res.status(500).json({ message: "CAPTCHA server error" });
+  }
 
+  // ✅ Normal login logic
+  try {
     const user = await User.findOne({ accountNumber });
-    if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
-
-    if (user.isLocked) {
-      if (user.lockUntil && user.lockUntil > new Date()) {
-        const remainingMs = user.lockUntil - new Date();
-        const remainingMin = Math.ceil(remainingMs / 60000);
-        return res.status(403).json({ message: `Account locked. Try again in ${remainingMin} minute(s).` });
-      } else {
-
-        user.isLocked = false;
-        user.failedLoginAttempts = 0;
-        user.lockUntil = null;
-        await user.save();
-      }
-    }
+    if (!user) return res.status(404).json({ message: "Account not found" });
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      user.failedLoginAttempts += 1;
-
-      if (user.failedLoginAttempts >= MAX_ATTEMPTS) {
-        user.isLocked = true;
-        user.lockUntil = new Date(Date.now() + LOCK_TIME_MINUTES * 60 * 1000); 
-      }
-
-      await user.save();
-
-      const left = MAX_ATTEMPTS - user.failedLoginAttempts;
-      return res.status(401).json({
-        message: user.isLocked
-          ? 'Account locked due to multiple failed attempts. Try again later.'
-          : `Invalid credentials. ${left} attempt(s) remaining.`,
-      });
-    }
-
-    user.failedLoginAttempts = 0;
-    user.isLocked = false;
-    user.lockUntil = null;
-    await user.save();
+    if (!isMatch) return res.status(401).json({ message: "Incorrect password" });
 
     const token = createToken(user._id);
-
     res
-      .cookie('accessToken', token, {
+      .cookie("accessToken", token, {
         httpOnly: true,
         secure: true,
-        sameSite: 'Strict',
+        sameSite: "Strict",
       })
       .status(200)
       .json({
-        message: 'Login successful',
+        message: "Login successful",
         token,
         user: {
           _id: user._id,
           accountNumber: user.accountNumber,
           fullName: user.fullName,
-          email: user.email,
         },
       });
-  } catch (error) {
-    console.error('Login error:', error.message);
-    res.status(500).json({ message: 'Internal server error' });
+  } catch (err) {
+    console.error("Login error:", err.message);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
