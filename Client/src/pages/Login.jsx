@@ -4,6 +4,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { API } from "../ApiUri";
 import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 const Login = () => {
   const [accountNumber, setAccountNumber] = useState("");
@@ -85,6 +86,13 @@ const Login = () => {
         >
           Login
         </button>
+        <p className="text-sm text-gray-400 mt-4 text-center">
+          Don’t have an account?{" "}
+          <Link to="/register" className="text-blue-500 hover:underline">
+            Register here
+          </Link>
+        </p>
+
       </div>
     </div>
   );
