@@ -27,6 +27,7 @@ const Navbar = () => {
 
       localStorage.removeItem("token");
       localStorage.removeItem("id");
+      localStorage.removeItem("_grecaptcha")
 
       setIsAuthenticated(false);
       toast.success("Logout successful")
