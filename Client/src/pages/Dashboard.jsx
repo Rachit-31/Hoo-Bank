@@ -3,11 +3,11 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { API } from "../ApiUri";
 import toast from "react-hot-toast";
-import { FaHome, FaListAlt, FaExchangeAlt } from "react-icons/fa";
+import { FaHome, FaListAlt, FaExchangeAlt, FaUser } from "react-icons/fa";
 
 const Dashboard = () => {
     const navigate = useNavigate();
-    const [activeSection, setActiveSection] = useState("account");
+    const [activeSection, setActiveSection] = useState("profile");
     const [accounts, setAccounts] = useState({
         checking: [],
         savings: [],
@@ -74,7 +74,6 @@ const Dashboard = () => {
                     headers: { Authorization: `Bearer ${token}` },
                     withCredentials: true,
                 });
-                console.log(res.data.transactions)
                 setTransactions(res.data.transactions || []);
                 setFilteredTransactions(res.data.transactions || []);
 
@@ -139,8 +138,8 @@ const Dashboard = () => {
             const res = await axios.get(`${API}/account/downloadPdf/${accountId}`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
-                    withCredentials: true,
                 },
+                withCredentials: true,
                 responseType: 'blob',
             });
 
@@ -153,7 +152,6 @@ const Dashboard = () => {
             link.click();
             link.remove();
             window.URL.revokeObjectURL(url);
-            console.log(res)
         } catch (err) {
             console.error("Download error:", err.message || err);
             toast.error("Failed to download transfer history PDF.");
@@ -215,7 +213,8 @@ const Dashboard = () => {
                     <div
                         onClick={() => setActiveSection("profile")}
                         className={`flex items-center p-2 rounded cursor-pointer ${activeSection === "profile" ? "bg-zinc-800" : "hover:bg-zinc-800"}`}
-                    >
+                    >   
+                        <FaUser className="text-white"/>
                         <span className="ml-2 text-white">Profile</span>
                     </div>
 
