@@ -28,15 +28,17 @@ const Dashboard = () => {
     const [confirmInput, setConfirmInput] = useState("");
     const [profile, setProfile] = useState({ fullName: "", email: "" });
     const [editingProfile, setEditingProfile] = useState(false);
+    const [selectedAccountId, setSelectedAccountId] = useState("");
 
 
 
     const applyFilter = () => {
         const filtered = transactions.filter((tx) => {
-            const txDate = new Date(tx.date);
+            // Filter by selected account
+            if (selectedAccountId && tx.accountId !== selectedAccountId) return false;
+            const txDate = new Date(tx.timestamp);
             const from = startDate ? new Date(startDate) : null;
-            const to = endDate ? new Date(endDate) : null;
-
+            const to = endDate ? new Date(new Date(endDate).setHours(23, 59, 59, 999)) : null;
             if (from && txDate < from) return false;
             if (to && txDate > to) return false;
             return true;
@@ -213,8 +215,8 @@ const Dashboard = () => {
                     <div
                         onClick={() => setActiveSection("profile")}
                         className={`flex items-center p-2 rounded cursor-pointer ${activeSection === "profile" ? "bg-zinc-800" : "hover:bg-zinc-800"}`}
-                    >   
-                        <FaUser className="text-white"/>
+                    >
+                        <FaUser className="text-white" />
                         <span className="ml-2 text-white">Profile</span>
                     </div>
 
@@ -351,6 +353,23 @@ const Dashboard = () => {
                         {/* Filter UI */}
                         <div className="mb-4 flex flex-col md:flex-row gap-4">
                             <div>
+                                <label className="block text-sm text-zinc-400 mb-1">Account</label>
+                                <select
+                                    value={selectedAccountId}
+                                    onChange={e => setSelectedAccountId(e.target.value)}
+                                    className="p-2 rounded bg-zinc-900 border border-zinc-700"
+                                >
+                                    <option value="">All Accounts</option>
+                                    {["checking", "savings", "fixedDeposits"].flatMap(type =>
+                                        accounts[type]?.map(acc => (
+                                            <option key={acc._id} value={acc._id}>
+                                                {type.toUpperCase()} - {acc.accountNumber}
+                                            </option>
+                                        ))
+                                    )}
+                                </select>
+                            </div>
+                            <div>
                                 <label className="block text-sm text-zinc-400 mb-1">Start Date</label>
                                 <input
                                     type="date"
@@ -379,34 +398,34 @@ const Dashboard = () => {
                         {/* Filtered Results */}
                         <div className="bg-zinc-800 p-6 rounded-xl shadow space-y-4">
                             {filteredTransactions.length > 0 ? (
-                                filteredTransactions.map((tx, idx) => (
-                                    <div
-                                        key={idx}
-                                        className="border border-zinc-700 rounded-lg p-4 flex flex-col gap-1"
-                                    >
-                                        <div className="flex justify-between">
-                                            <span className="text-sm text-zinc-400 font-medium">{tx.type.toUpperCase()}</span>
-                                            <span
-                                                className={
-                                                    tx.type === "Debit" ? "text-red-400 font-semibold" : "text-green-400 font-semibold"
-                                                }
-                                            >
-                                                {tx.type === "Debit" ? `- ₹${tx.amount}` : `+ ₹${tx.amount}`}
-                                            </span>
+                                [...filteredTransactions]
+                                    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                                    .map((tx, idx) => (
+                                        <div
+                                            key={idx}
+                                            className="border border-zinc-700 rounded-lg p-4 flex flex-col gap-1"
+                                        >
+                                            <div className="flex justify-between">
+                                                <span className="text-sm text-zinc-400 font-medium">{tx.type.toUpperCase()}</span>
+                                                <span
+                                                    className={
+                                                        tx.type === "Debit" ? "text-red-400 font-semibold" : "text-green-400 font-semibold"
+                                                    }
+                                                >
+                                                    {tx.type === "Debit" ? `- ₹${tx.amount}` : `+ ₹${tx.amount}`}
+                                                </span>
+                                            </div>
+                                            <div className="text-sm text-zinc-400 italic">
+                                                {tx.description || "No description"}
+                                            </div>
+                                            <div className="text-xs text-zinc-500">
+                                                {new Date(tx.timestamp).toLocaleString("en-IN", {
+                                                    dateStyle: "medium",
+                                                    timeStyle: "short",
+                                                })}
+                                            </div>
                                         </div>
-
-                                        <div className="text-sm text-zinc-400 italic">
-                                            {tx.description || "No description"}
-                                        </div>
-
-                                        <div className="text-xs text-zinc-500">
-                                            {new Date(tx.timestamp).toLocaleString("en-IN", {
-                                                dateStyle: "medium",
-                                                timeStyle: "short",
-                                            })}
-                                        </div>
-                                    </div>
-                                ))
+                                    ))
                             ) : (
                                 <p className="text-zinc-400 text-sm">No transactions found.</p>
                             )}
@@ -419,7 +438,7 @@ const Dashboard = () => {
                 {activeSection === "transfer" && (
                     <section className="mt-15 flex justify-center items-start min-h-[80vh]">
                         <form
-                            onSubmit={handleConfirmTransfer}
+
                             className="bg-zinc-800 p-6 rounded-xl shadow space-y-4 max-w-xl w-full"
                         >
                             {/* From Account */}
