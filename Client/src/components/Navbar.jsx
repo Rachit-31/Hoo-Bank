@@ -46,8 +46,8 @@ const Navbar = () => {
         {/* Center - Nav Links */}
         <div className="hidden md:flex space-x-6">
           <Link to="/" className="hover:text-blue-400 transition">Home</Link>
-          <Link to="/transfer" className="hover:text-blue-400 transition">Transfer</Link>
-          <Link to="/statements" className="hover:text-blue-400 transition">Statements</Link>
+          {/* <Link to="/transfer" className="hover:text-blue-400 transition">Transfer</Link> */}
+          <Link to="/dashboard" className="hover:text-blue-400 transition">Statements</Link>
         </div>
 
         {/* Right - Auth Buttons */}
@@ -79,8 +79,8 @@ const Navbar = () => {
       {isOpen && (
         <div className="md:hidden px-6 pb-4 space-y-3">
           <Link to="/" onClick={() => setIsOpen(false)} className="block hover:text-blue-400">Home</Link>
-          <Link to="/transfer" onClick={() => setIsOpen(false)} className="block hover:text-blue-400">Transfer</Link>
-          <Link to="/statements" onClick={() => setIsOpen(false)} className="block hover:text-blue-400">Statements</Link>
+          {/* <Link to="/transfer" onClick={() => setIsOpen(false)} className="block hover:text-blue-400">Transfer</Link> */}
+          <Link to="/dashboard" onClick={() => setIsOpen(false)} className="block hover:text-blue-400">Statements</Link>
 
           {isAuthenticated ? (
             <>
