@@ -41,7 +41,7 @@ const Navbar = () => {
     <nav className="fixed top-4 left-1/2 transform -translate-x-1/2 w-[90%] md:w-[80%] bg-zinc-900 text-white rounded-xl shadow-lg z-50">
       <div className="flex items-center justify-between px-6 py-4">
         {/* Left - Bank Name */}
-        <div className="text-xl font-bold text-white">FirstChoice Bank</div>
+        <div className="text-xl font-bold text-white">Hoo Bank</div>
 
         {/* Center - Nav Links */}
         <div className="hidden md:flex space-x-6">

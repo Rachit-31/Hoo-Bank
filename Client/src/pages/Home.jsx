@@ -4,7 +4,7 @@ const Home = () => {
       {/* Welcome Section */}
       <header className="text-center mb-20 mt-24">
         <h1 className="text-5xl md:text-6xl font-extrabold mb-4">
-          Welcome to FirstChoice Bank
+          Welcome to Hoo Bank
         </h1>
         <p className="text-gray-400 text-lg max-w-2xl mx-auto">
           Trusted by thousands for secure banking, seamless transactions, and round-the-clock support. Experience a smarter way to manage your finances.

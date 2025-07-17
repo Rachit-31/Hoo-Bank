@@ -36,7 +36,7 @@ const Register = () => {
     <div className="min-h-screen bg-black text-white flex items-center justify-center px-4 py-10">
       <div className="bg-zinc-900 p-10 rounded-xl shadow-md max-w-md w-full border border-zinc-800">
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-blue-500">FirstChoice Bank</h2>
+          <h2 className="text-3xl font-bold text-blue-500">Hoo Bank</h2>
           <p className="text-sm text-gray-400 mt-1">Create a Secure Account</p>
         </div>
 
